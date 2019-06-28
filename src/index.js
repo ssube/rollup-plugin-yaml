@@ -14,19 +14,24 @@ export default function yaml(options = {}) {
 			if (!ext.test(id)) return null;
 			if (!filter(id)) return null;
 
-			const data = YAML.load(yaml);
+			const decl = options.decl || 'const';
+
+			const data = YAML.safeLoad(yaml, {
+				schema: options.schema,
+			});
 			const keys = Object.keys(data).filter(
 				key => key === makeLegalIdentifier(key)
 			);
 
-			let code = `var data = ${toSource(data)};\n\n`;
-
-			const exports = ['export default data;']
-				.concat(keys.map(key => `export var ${key} = data.${key};`))
-				.join('\n');
+			const code = [
+                                `${decl} data = ${toSource(data)};`,
+				'export default data;',
+			]
+				.concat(keys.map(key => `export ${decl} ${key} = data.${key};`))
+				.join('\n\n');
 
 			return {
-				code: code + exports,
+				code,
 				map: { mappings: '' }
 			};
 		}
